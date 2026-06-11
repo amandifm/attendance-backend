@@ -9,6 +9,7 @@ export type AuthUser = {
   departmentId: string|null;
   designationId: string |null;
   managerId: string | null;
+  forceLogoutAt?: Date | null;
   phone: string | null;
   joiningDate: Date;
   faceReferenceDataUrl: string | null;

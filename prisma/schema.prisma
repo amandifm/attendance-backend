@@ -158,6 +158,7 @@ model ShiftChangeLog {
   reason      String?
   createdAt   DateTime @default(now())
   shift       Shift    @relation(fields: [shiftId], references: [id])
+  changedBy   User     @relation(fields: [changedById], references: [id])
 }
 
 model AttendanceRecord {

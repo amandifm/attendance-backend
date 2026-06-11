@@ -19,7 +19,15 @@ type SerializableSettings = {
   defaultLatitude?: number | null;
   defaultLongitude?: number | null;
   geofenceRadiusMeters?: number;
+
   shiftGraceMinutes: number;
+
+  defaultShiftStartTime?: string;
+  defaultShiftEndTime?: string;
+  lateMarkThresholdMinutes?: number;
+  lateWarningThresholdMinutes?: number;
+  defaultBreakDurationMinutes?: number;
+
   sessionHours: number;
   allowEmployeeLeaveRequest: boolean;
   requireShiftForPunch: boolean;
