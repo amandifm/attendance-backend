@@ -1,0 +1,578 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model UserFaceProfile {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  descriptor        Json
+  referenceImageUrl String?
+  enrolledAt        DateTime @default(now())
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id])
+}
+
+model Department {
+  id           String        @id @default(cuid())
+  name         String        @unique
+  slug         String        @unique
+  description  String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  designations Designation[]
+  users        User[]
+}
+
+model Designation {
+  id           String     @id @default(cuid())
+  name         String
+  slug         String     @unique
+  description  String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id])
+  users        User[]
+
+  @@unique([departmentId, name])
+}
+
+model User {
+  id                         String                        @id @default(cuid())
+  name                       String
+  email                      String                        @unique
+  passwordHash               String
+  role                       UserRole
+  managerId                  String?
+  phone                      String?
+  joiningDate                DateTime                      @default(now())
+  active                     Boolean                       @default(true)
+  createdAt                  DateTime                      @default(now())
+  updatedAt                  DateTime                      @updatedAt
+  faceReferenceDataUrl       String?
+  faceRegisteredAt           DateTime?
+  attendancePolicyAcceptedAt DateTime?
+  attendancePolicyVersion    String?
+  forceLogoutAt              DateTime?
+  departmentId               String?
+  designationId              String?
+  dailyBreakLimitMinutes     Int                           @default(10)
+  apiKeys                    ApiKey[]
+  notifications              AppNotification[]
+  decidedCorrections         AttendanceCorrectionRequest[] @relation("CorrectionDecider")
+  correctionRequests         AttendanceCorrectionRequest[] @relation("CorrectionRequester")
+  lockedMonths               AttendanceMonthLock[]         @relation("MonthLocker")
+  attendance                 AttendanceRecord[]
+  auditEvents                AuditLog[]
+  decidedLeaves              LeaveRequest[]                @relation("LeaveDecider")
+  leaveRequests              LeaveRequest[]                @relation("EmployeeLeave")
+  refreshTokens              RefreshToken[]
+  assignedShifts             Shift[]                       @relation("ShiftAssigner")
+  shifts                     Shift[]                       @relation("EmployeeShifts")
+  assignedShiftTemplates     ShiftTemplate[]               @relation("ShiftTemplateAssigner")
+  shiftTemplates             ShiftTemplate[]               @relation("EmployeeShiftTemplates")
+  finalizations              AttendanceMonthFinalization[] @relation("MonthFinalizer")
+  disputes                   AttendanceDispute[]           @relation("DisputeRequester")
+  reviewedDisputes           AttendanceDispute[]           @relation("DisputeReviewer")
+  resolvedDisputes           AttendanceDispute[]           @relation("DisputeResolver")
+  locationExceptions         LocationExceptionRequest[]    @relation("LocationExceptionRequester")
+  decidedLocationExceptions  LocationExceptionRequest[]    @relation("LocationExceptionDecider")
+  holidays                   CompanyHoliday[]              @relation("HolidayCreator")
+  deviceLogs                 DeviceLoginLog[]              @relation("DeviceLogs")
+  departmentRelation         Department?                   @relation(fields: [departmentId], references: [id])
+  designationRelation        Designation?                  @relation(fields: [designationId], references: [id])
+  manager                    User?                         @relation("ManagerReports", fields: [managerId], references: [id])
+  reports                    User[]                        @relation("ManagerReports")
+  faceProfile                UserFaceProfile?
+  webhookEndpoints           WebhookEndpoint[]
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  revokedAt DateTime?
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id])
+}
+
+model Shift {
+  id            String             @id @default(cuid())
+  employeeId    String
+  employeeName  String
+  date          DateTime
+  startAt       DateTime
+  endAt         DateTime
+  startTime     String
+  endTime       String
+  type          ShiftType          @default(DAY)
+  isNightShift  Boolean            @default(false)
+  locationName  String
+  notes         String?
+  status        ShiftStatus        @default(ASSIGNED)
+  assignedById  String
+  assignedAt    DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  attendance    AttendanceRecord[]
+  assignedBy    User               @relation("ShiftAssigner", fields: [assignedById], references: [id])
+  employee      User               @relation("EmployeeShifts", fields: [employeeId], references: [id])
+  changeHistory ShiftChangeLog[]
+
+  @@index([employeeId, date])
+}
+
+model ShiftTemplate {
+  id           String    @id @default(cuid())
+  employeeId   String
+  employeeName String
+  startTime    String
+  endTime      String
+  type         ShiftType @default(DAY)
+  isNightShift Boolean   @default(false)
+  locationName String
+  notes        String?
+  active       Boolean   @default(true)
+  assignedById String
+  assignedAt   DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  assignedBy   User      @relation("ShiftTemplateAssigner", fields: [assignedById], references: [id])
+  employee     User      @relation("EmployeeShiftTemplates", fields: [employeeId], references: [id])
+
+  @@index([employeeId, active])
+}
+
+model ShiftChangeLog {
+  id          String   @id @default(cuid())
+  shiftId     String
+  changedById String
+  oldValue    Json
+  newValue    Json
+  reason      String?
+  createdAt   DateTime @default(now())
+  shift       Shift    @relation(fields: [shiftId], references: [id])
+}
+
+model AttendanceRecord {
+  id                     String                        @id @default(cuid())
+  employeeId             String
+  employeeName           String
+  shiftId                String?
+  date                   DateTime
+  punchInAt              DateTime?
+  punchOutAt             DateTime?
+  punchInLocation        String?
+  punchOutLocation       String?
+  punchInLatitude        Float?
+  punchInLongitude       Float?
+  punchOutLatitude       Float?
+  punchOutLongitude      Float?
+  deviceId               String?
+  ipAddress              String?
+  grossMinutes           Int?
+  breakMinutes           Int                           @default(0)
+  totalMinutes           Int?
+  lateMinutes            Int                           @default(0)
+  riskLevel              String?
+  status                 AttendanceStatus
+  createdAt              DateTime                      @default(now())
+  updatedAt              DateTime                      @updatedAt
+  faceVerified           Boolean                       @default(false)
+  faceVerificationStatus String?
+  faceSelfieDataUrl      String?
+  faceCapturedAt         DateTime?
+  faceMatchScore         Float?
+  faceLivenessStatus     String?
+  faceSelfieObjectKey    String?
+  breakExceededAt        DateTime?
+  breakLimitExceeded     Boolean                       @default(false)
+  lateStatus             String?
+  breaks                 AttendanceBreak[]
+  corrections            AttendanceCorrectionRequest[]
+  locationPings          AttendanceLocationPing[]
+  disputes               AttendanceDispute[]
+  employee               User                          @relation(fields: [employeeId], references: [id])
+  shift                  Shift?                        @relation(fields: [shiftId], references: [id])
+  missingCheckout        Boolean                       @default(false)
+
+  @@index([employeeId, date])
+}
+
+model AttendanceBreak {
+  id           String           @id @default(cuid())
+  attendanceId String
+  startedAt    DateTime
+  endedAt      DateTime?
+  createdAt    DateTime         @default(now())
+  breakMinutes Int              @default(0)
+  attendance   AttendanceRecord @relation(fields: [attendanceId], references: [id])
+}
+
+model LeaveRequest {
+  id           String      @id @default(cuid())
+  employeeId   String
+  employeeName String
+  fromDate     DateTime
+  toDate       DateTime
+  leaveType    LeaveType
+  reason       String
+  status       LeaveStatus @default(PENDING)
+  requestedAt  DateTime    @default(now())
+  decidedById  String?
+  decidedAt    DateTime?
+  decisionNote String?
+  decidedBy    User?       @relation("LeaveDecider", fields: [decidedById], references: [id])
+  employee     User        @relation("EmployeeLeave", fields: [employeeId], references: [id])
+}
+
+model AppNotification {
+  id        String           @id @default(cuid())
+  userId    String
+  title     String
+  body      String
+  type      NotificationType
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id])
+}
+
+model CompanySettings {
+  id                          String   @id @default("company")
+  companyName                 String   @default("DIFM")
+  defaultLocation             String   @default("DIFM Office")
+  shiftGraceMinutes           Int      @default(5)
+  defaultShiftStartTime       String   @default("09:00")
+  defaultShiftEndTime         String   @default("17:00")
+  lateMarkThresholdMinutes    Int      @default(15)
+  lateWarningThresholdMinutes Int      @default(30)
+  defaultBreakDurationMinutes Int      @default(60)
+  sessionHours                Int      @default(12)
+  allowEmployeeLeaveRequest   Boolean  @default(true)
+  requireShiftForPunch        Boolean  @default(true)
+  updatedAt                   DateTime @updatedAt
+  defaultLatitude             Float?
+  defaultLongitude            Float?
+  geofenceRadiusMeters        Int      @default(200)
+  requireLocationForPunch     Boolean  @default(true)
+  attendancePolicyVersion     String   @default("v1")
+  attendancePolicyText        String   @default("I confirm that I will use DIFM Attendance honestly, allow required GPS/camera checks during attendance, and report missed punches or location issues to HR.")
+  requireBiometricFaceMatch   Boolean  @default(false)
+  faceMatchThreshold          Float    @default(0.75)
+  payrollStandardDailyMinutes Int      @default(480)
+  payrollHalfDayMinutes       Int      @default(240)
+  payrollLateGraceCount       Int      @default(5)
+  payrollLateDeductionAfter   Int      @default(8)
+  payrollBonusMaxLateCount    Int      @default(2)
+}
+
+model AttendanceLocationPing {
+  id             String           @id @default(cuid())
+  attendanceId   String
+  employeeId     String
+  latitude       Float
+  longitude      Float
+  accuracyMeters Float?
+  locationName   String?
+  risk           String?
+  reviewStatus   String?          // PENDING_REVIEW | APPROVED | FLAGGED
+  reviewNote     String?
+  reviewedById   String?
+  reviewedAt     DateTime?
+  capturedAt     DateTime         @default(now())
+  attendance     AttendanceRecord @relation(fields: [attendanceId], references: [id])
+
+  @@index([attendanceId, capturedAt])
+  @@index([employeeId, capturedAt])
+}
+
+model AttendanceCorrectionRequest {
+  id                  String           @id @default(cuid())
+  attendanceId        String
+  employeeId          String
+  employeeName        String
+  requestedPunchInAt  DateTime?
+  requestedPunchOutAt DateTime?
+  reason              String
+  status              CorrectionStatus @default(PENDING)
+  requestedAt         DateTime         @default(now())
+  decidedById         String?
+  decidedAt           DateTime?
+  decisionNote        String?
+  attendance          AttendanceRecord @relation(fields: [attendanceId], references: [id])
+  decidedBy           User?            @relation("CorrectionDecider", fields: [decidedById], references: [id])
+  employee            User             @relation("CorrectionRequester", fields: [employeeId], references: [id])
+
+  @@index([employeeId, status])
+  @@index([attendanceId, status])
+}
+
+model AttendanceMonthLock {
+  id         String   @id @default(cuid())
+  month      String   @unique
+  lockedById String
+  lockedAt   DateTime @default(now())
+  note       String?
+  lockedBy   User     @relation("MonthLocker", fields: [lockedById], references: [id])
+
+  @@index([lockedAt])
+}
+
+model AttendanceMonthFinalization {
+  id            String   @id @default(cuid())
+  month         String   @unique
+  finalizedById String
+  finalizedAt   DateTime @default(now())
+  note          String?
+  finalizedBy   User     @relation("MonthFinalizer", fields: [finalizedById], references: [id])
+
+  @@index([month])
+}
+
+model AttendanceDispute {
+  id             String        @id @default(cuid())
+  attendanceId   String
+  employeeId     String
+  employeeName   String
+  reason         String
+  status         DisputeStatus @default(OPEN)
+  hrNote         String?
+  superAdminNote String?
+  reviewedById   String?
+  resolvedById   String?
+  reviewedAt     DateTime?
+  resolvedAt     DateTime?
+  requestedAt    DateTime      @default(now())
+  attendance     AttendanceRecord @relation(fields: [attendanceId], references: [id])
+  employee       User             @relation("DisputeRequester", fields: [employeeId], references: [id])
+  reviewedBy     User?            @relation("DisputeReviewer", fields: [reviewedById], references: [id])
+  resolvedBy     User?            @relation("DisputeResolver", fields: [resolvedById], references: [id])
+
+  @@index([employeeId, status])
+  @@index([attendanceId])
+}
+
+model LocationExceptionRequest {
+  id           String                  @id @default(cuid())
+  employeeId   String
+  employeeName String
+  date         DateTime
+  reason       String
+  status       LocationExceptionStatus @default(PENDING)
+  decidedById  String?
+  decidedAt    DateTime?
+  decisionNote String?
+  requestedAt  DateTime                @default(now())
+  employee     User @relation("LocationExceptionRequester", fields: [employeeId], references: [id])
+  decidedBy    User? @relation("LocationExceptionDecider", fields: [decidedById], references: [id])
+
+  @@index([employeeId, date])
+  @@index([status])
+}
+
+model ApiKey {
+  id          String    @id @default(cuid())
+  name        String
+  keyHash     String    @unique
+  prefix      String
+  scopes      String[]
+  active      Boolean   @default(true)
+  createdById String
+  createdAt   DateTime  @default(now())
+  revokedAt   DateTime?
+  lastUsedAt  DateTime?
+  createdBy   User      @relation(fields: [createdById], references: [id])
+
+  @@index([active])
+  @@index([prefix])
+}
+
+model WebhookEndpoint {
+  id          String            @id @default(cuid())
+  name        String
+  url         String
+  secret      String
+  events      WebhookEvent[]
+  active      Boolean           @default(true)
+  createdById String
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  deliveries  WebhookDelivery[]
+  createdBy   User              @relation(fields: [createdById], references: [id])
+
+  @@index([active])
+}
+
+model WebhookDelivery {
+  id          String          @id @default(cuid())
+  endpointId  String
+  event       WebhookEvent
+  payload     Json
+  status      String          @default("PENDING")
+  statusCode  Int?
+  error       String?
+  attemptedAt DateTime        @default(now())
+  endpoint    WebhookEndpoint @relation(fields: [endpointId], references: [id])
+
+  @@index([endpointId, attemptedAt])
+  @@index([event, attemptedAt])
+}
+
+model EmailDelivery {
+  id          String              @id @default(cuid())
+  toEmail     String
+  subject     String
+  body        String
+  status      EmailDeliveryStatus @default(PENDING)
+  provider    String?
+  error       String?
+  relatedType String?
+  relatedId   String?
+  createdAt   DateTime            @default(now())
+  sentAt      DateTime?
+
+  @@index([status, createdAt])
+  @@index([relatedType, relatedId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String
+  entityType String
+  entityId   String?
+  metadata   Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+  actor      User?    @relation(fields: [actorId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+model push_tokens {
+  id         String    @id @db.Uuid
+  user_id    String?   @db.Uuid
+  expo_token String?
+  created_at DateTime? @db.Timestamp(6)
+}
+
+enum UserRole {
+  ADMIN
+  HR
+  MANAGER
+  EMPLOYEE
+  SUPER_ADMIN
+}
+
+enum ShiftStatus {
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ShiftType {
+  DAY
+  EVENING
+  NIGHT
+}
+
+enum AttendanceStatus {
+  PRESENT
+  IN_PROGRESS
+  ABSENT
+  MISSED_PUNCH
+  HALF_DAY
+  SHORT_HOURS
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum LeaveType {
+  CASUAL
+  SICK
+  EARNED
+  UNPAID
+}
+
+enum CorrectionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum NotificationType {
+  SHIFT
+  ATTENDANCE
+  LEAVE
+  SYSTEM
+  BREAK
+}
+
+enum EmailDeliveryStatus {
+  PENDING
+  SENT
+  SKIPPED
+  FAILED
+}
+
+enum WebhookEvent {
+  ATTENDANCE_PUNCH_IN
+  ATTENDANCE_PUNCH_OUT
+  LEAVE_DECIDED
+  CORRECTION_DECIDED
+}
+
+enum DisputeStatus {
+  OPEN
+  HR_REVIEWED
+  RESOLVED
+  DISMISSED
+}
+
+enum LocationExceptionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model CompanyHoliday {
+  id          String   @id @default(cuid())
+  date        DateTime
+  name        String
+  description String?
+  createdById String
+  createdAt   DateTime @default(now())
+  createdBy   User     @relation("HolidayCreator", fields: [createdById], references: [id])
+
+  @@unique([date])
+  @@index([date])
+}
+
+model DeviceLoginLog {
+  id         String   @id @default(cuid())
+  userId     String
+  deviceId   String
+  ipAddress  String?
+  userAgent  String?
+  loginAt    DateTime @default(now())
+  flagged    Boolean  @default(false)
+  flagReason String?
+  user       User     @relation("DeviceLogs", fields: [userId], references: [id])
+
+  @@index([userId, loginAt])
+  @@index([flagged])
+}
+

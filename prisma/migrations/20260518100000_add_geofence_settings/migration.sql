@@ -1,0 +1,5 @@
+ALTER TABLE "CompanySettings"
+ADD COLUMN "defaultLatitude" DOUBLE PRECISION,
+ADD COLUMN "defaultLongitude" DOUBLE PRECISION,
+ADD COLUMN "geofenceRadiusMeters" INTEGER NOT NULL DEFAULT 200,
+ADD COLUMN "requireLocationForPunch" BOOLEAN NOT NULL DEFAULT true;

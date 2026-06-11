@@ -1,0 +1,49 @@
+name: CD Pipeline
+
+on:
+  workflow_run:
+    workflows: ["CI Pipeline"]
+    types:
+     - completed
+
+jobs:
+
+  build:
+    runs-on: self-hosted
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Login to Docker Hub
+      run: echo "${{ secrets.DOCKER_PASSWORD }}" | sudo docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+    - name: Pull image from Docker Hub
+      run: sudo docker pull doitformellc/difm-attendance-app-backend:latest  
+
+    - name: Stop and remove old container
+      run: sudo docker rm -f DIFM-Attendance-App-Backend-container || true
+
+    - name: Run Docker Container
+      run: |
+        sudo docker run -d -p 8080:4000 --network kweesha-network --name DIFM-Attendance-App-Backend-container \
+        -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+        -e JWT_ACCESS_SECRET="${{ secrets.JWT_ACCESS_SECRET }}" \
+        -e JWT_REFRESH_SECRET="${{ secrets.JWT_REFRESH_SECRET }}" \
+        -e JWT_ACCESS_EXPIRES="${{ secrets.JWT_ACCESS_EXPIRES }}" \
+        -e JWT_REFRESH_EXPIRES="${{ secrets.JWT_REFRESH_EXPIRES }}" \
+        -e REFRESH_TOKEN_DAYS="${{ secrets.REFRESH_TOKEN_DAYS }}" \
+        -e DB_USER="${{ secrets.DB_USER }}" \
+        -e DB_HOST="${{ secrets.DB_HOST }}" \
+        -e DB_NAME="${{ secrets.DB_NAME }}" \
+        -e DB_PASSWORD="${{ secrets.DB_PASSWORD }}" \
+        -e DB_PORT="${{ secrets.DB_PORT }}" \
+        doitformellc/difm-attendance-app-backend
+
+    - name: Verify container is running
+      run: |
+        sleep 5
+        sudo docker ps --filter "name=DIFM-Attendance-App-Backend-container" --filter "status=running" --format "{{.Names}}" | grep -q DIFM-Attendance-App-Backend-container || {
+          sudo docker logs DIFM-Attendance-App-Backend-container
+          exit 1
+        }
