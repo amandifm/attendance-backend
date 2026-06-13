@@ -1,7 +1,16 @@
-import '@tensorflow/tfjs-node'
 import * as faceapi from 'face-api.js'
 import * as canvas from 'canvas'
 import path from 'path'
+import { createRequire } from 'module';
+
+const customRequire = createRequire(import.meta.url);
+
+try {
+    customRequire('@tensorflow/tfjs-node');
+    console.log("Loaded @tensorflow/tfjs-node native backend");
+} catch (e) {
+    console.warn("Failed to load @tensorflow/tfjs-node. Falling back to pure JS backend.");
+}
 const { Canvas, Image, ImageData } = canvas
 
 

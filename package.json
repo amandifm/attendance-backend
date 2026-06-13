@@ -36,6 +36,9 @@
     "nodemon": "^3.1.14",
     "zod": "^3.24.1"
   },
+  "optionalDependencies": {
+    "@tensorflow/tfjs-node": "^4.22.0"
+  },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.17",
