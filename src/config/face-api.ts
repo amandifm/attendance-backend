@@ -1,3 +1,4 @@
+import '@tensorflow/tfjs-node'
 import * as faceapi from 'face-api.js'
 import * as canvas from 'canvas'
 import path from 'path'
