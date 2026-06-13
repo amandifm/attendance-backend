@@ -11,8 +11,8 @@ faceapi.env.monkeyPatch({
 })
 
 export async function loadDataModels() {
-    await faceapi.tf.setBackend('wasm');
-    await faceapi.tf.ready();
+await (faceapi.tf as any).setBackend('wasm');
+    await (faceapi.tf as any).ready();
     console.log("Initialized tfjs-backend-wasm successfully");
 
     const MODEL_URL =
