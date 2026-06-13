@@ -1,4 +1,4 @@
-import * as faceapi from 'face-api.js'
+import * as faceapi from '@vladmandic/face-api'
 import * as canvas from 'canvas'
 import path from 'path'
 import { createRequire } from 'module';
