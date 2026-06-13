@@ -540,11 +540,23 @@ router.get(
     const { employeeId } = req.params;
     const logs = await prisma.shiftChangeLog.findMany({
       where: { shift: { employeeId } },
-      include: { changedBy: { select: { name: true } } },
       orderBy: { createdAt: "desc" }
     });
+    
+    const userIds = [...new Set(logs.map(log => log.changedById))];
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, name: true }
+    });
+    const userMap = new Map(users.map(u => [u.id, u.name]));
+    
+    const logsWithUsers = logs.map(log => ({
+      ...log,
+      changedBy: { name: userMap.get(log.changedById) ?? "Unknown" }
+    }));
+    
     const { serializeShiftChangeLog } = await import("../serializers.js");
-    ok(res, logs.map(serializeShiftChangeLog));
+    ok(res, logsWithUsers.map(serializeShiftChangeLog));
   })
 );
 

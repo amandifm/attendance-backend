@@ -4,6 +4,7 @@ import {
   AttendanceLocationPing,
   AttendanceMonthFinalization,
   AttendanceRecord,
+  CompanySettings,
   LeaveRequest,
   LocationExceptionRequest,
   Shift,
@@ -13,36 +14,7 @@ import {
 import { getPrivatePhotoReadUrl, isS3PhotoStorage } from "./privatePhotos.js";
 
 
-type SerializableSettings = {
-  companyName: string;
-  defaultLocation: string;
-  defaultLatitude?: number | null;
-  defaultLongitude?: number | null;
-  geofenceRadiusMeters?: number;
-
-  shiftGraceMinutes: number;
-
-  defaultShiftStartTime?: string;
-  defaultShiftEndTime?: string;
-  lateMarkThresholdMinutes?: number;
-  lateWarningThresholdMinutes?: number;
-  defaultBreakDurationMinutes?: number;
-
-  sessionHours: number;
-  allowEmployeeLeaveRequest: boolean;
-  requireShiftForPunch: boolean;
-  requireLocationForPunch?: boolean;
-  attendancePolicyVersion?: string;
-  attendancePolicyText?: string;
-  requireBiometricFaceMatch?: boolean;
-  faceMatchThreshold?: number;
-  payrollStandardDailyMinutes?: number;
-  payrollHalfDayMinutes?: number;
-  payrollLateGraceCount?: number;
-  payrollLateDeductionAfter?: number;
-  payrollBonusMaxLateCount?: number;
-  updatedAt: Date;
-};
+type SerializableSettings = CompanySettings;
 
 type SerializableCorrection = {
   id: string;

@@ -22,7 +22,10 @@ export interface AuthenticatedUserRequest
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   try {
     const header = req.header("authorization");
-    const token = header?.startsWith("Bearer ") ? header.slice("Bearer ".length) : null;
+    let token = header?.startsWith("Bearer ") ? header.slice("Bearer ".length) : null;
+    if (!token && typeof req.query.token === "string") {
+      token = req.query.token;
+    }
     if (!token) {
       throw new AppError(401, "Authentication required.");
     }

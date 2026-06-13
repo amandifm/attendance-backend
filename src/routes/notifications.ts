@@ -13,9 +13,14 @@ router.get(
   requireAuth,
   asyncHandler(async (req, res) => {
     const viewer = (req as AuthenticatedRequest).user;
+    const skip = parseInt(req.query.skip as string) || 0;
+    const take = parseInt(req.query.take as string) || 100;
+    
     const notifications = await prisma.appNotification.findMany({
-      where: viewer.role === "EMPLOYEE" ? { userId: viewer.id } : undefined,
-      orderBy: { createdAt: "desc" }
+      where: { userId: viewer.id },
+      orderBy: { createdAt: "desc" },
+      skip,
+      take
     });
     ok(res, notifications.map(serializeNotification));
   })
@@ -40,6 +45,19 @@ router.patch(
       data: { read: true }
     });
     ok(res, serializeNotification(updated));
+  })
+);
+
+// ─── DELETE /notifications/all ────────────────────────────────────────────────
+router.delete(
+  "/all",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const viewer = (req as AuthenticatedRequest).user;
+    await prisma.appNotification.deleteMany({
+      where: { userId: viewer.id }
+    });
+    ok(res, { deletedAll: true });
   })
 );
 
@@ -120,6 +138,7 @@ router.post(
     ok(res, { markedRead: true });
   })
 );
+
 
 export { router as notificationsRouter };
 

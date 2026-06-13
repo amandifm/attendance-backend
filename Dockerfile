@@ -19,6 +19,5 @@ RUN npm ci
 COPY . .
 RUN npx prisma generate
 RUN npm run build
-RUN npx prisma migrate deploy
 EXPOSE 4000
-CMD [ "npm", "run", "start" ]
+CMD [ "sh", "-c", "npx prisma migrate deploy && npm run start" ]

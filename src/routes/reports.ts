@@ -89,7 +89,8 @@ router.get(
       templates,
       attendance,
       pendingLeaves,
-      pendingCorrections
+      pendingCorrections,
+      companySettings
     ] = await Promise.all([
       prisma.user.count({ where: { role: "EMPLOYEE", active: true } }),
       prisma.shift.findMany({
@@ -114,7 +115,8 @@ router.get(
         orderBy: [{ punchInAt: "desc" }, { employeeName: "asc" }]
       }),
       prisma.leaveRequest.count({ where: { status: "PENDING" } }),
-      prisma.attendanceCorrectionRequest.count({ where: { status: "PENDING" } })
+      prisma.attendanceCorrectionRequest.count({ where: { status: "PENDING" } }),
+      prisma.companySettings.upsert({ where: { id: "company" }, update: {}, create: {} })
     ]);
 
     const handledEmployees = new Set<string>();
@@ -156,10 +158,10 @@ router.get(
         punchOutLongitude: record?.punchOutLongitude ?? undefined,
         lateMinutes: record?.lateMinutes ?? 0,
         lateStatus: (record as any)?.lateStatus ?? null,
-        lastLocationPingAt: lastPing?.capturedAt?.toISOString(),
         locationStatus,
         isOnBreak: !!activeBreak,
-        activeBreakStartedAt: activeBreak?.startedAt?.toISOString()
+        activeBreakStartedAt: activeBreak?.startedAt?.toISOString(),
+        breakMinutes: record?.breakMinutes ?? 0
       });
     }
 
@@ -198,10 +200,10 @@ router.get(
         punchOutLongitude: record?.punchOutLongitude ?? undefined,
         lateMinutes: record?.lateMinutes ?? 0,
         lateStatus: (record as any)?.lateStatus ?? null,
-        lastLocationPingAt: lastPing?.capturedAt?.toISOString(),
         locationStatus,
         isOnBreak: !!activeBreak,
-        activeBreakStartedAt: activeBreak?.startedAt?.toISOString()
+        activeBreakStartedAt: activeBreak?.startedAt?.toISOString(),
+        breakMinutes: record?.breakMinutes ?? 0
       });
     }
 
@@ -239,10 +241,10 @@ router.get(
         punchOutLongitude: record.punchOutLongitude ?? undefined,
         lateMinutes: record.lateMinutes ?? 0,
         lateStatus: (record as any)?.lateStatus ?? null,
-        lastLocationPingAt: lastPing?.capturedAt?.toISOString(),
         locationStatus,
         isOnBreak: !!activeBreak,
-        activeBreakStartedAt: activeBreak?.startedAt?.toISOString()
+        activeBreakStartedAt: activeBreak?.startedAt?.toISOString(),
+        breakMinutes: record?.breakMinutes ?? 0
       });
     }
 
@@ -259,7 +261,8 @@ router.get(
         completed,
         pendingLeaves,
         pendingCorrections,
-        missingLocation
+        missingLocation,
+        sessionHours: companySettings.sessionHours
       },
       rows
     });

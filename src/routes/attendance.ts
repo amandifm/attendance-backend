@@ -860,7 +860,7 @@ router.post(
     console.log("Existing break minutes before starting new break:", existing.breakMinutes);
     console.log("User's daily break limit : ", user.dailyBreakLimitMinutes)
     if (existing.breakMinutes >= user.dailyBreakLimitMinutes) {
-      throw new AppError(400, "Daily break limit of 60 minutes reached.");
+      throw new AppError(400, `Daily break limit of ${user.dailyBreakLimitMinutes} minutes reached.`);
     }
     await ensureMonthOpen(existing.date);
     const startedAt = new Date();
@@ -946,7 +946,7 @@ router.post(
         data: {
           userId: user.id,
           title: "Break Limit Exceeded",
-          body: `${user.name} has exceeded the Break Limit of 60 minutes with a total of ${newBreakMinutes} break minutes today.`,
+          body: `${user.name} has exceeded the Break Limit of ${user.dailyBreakLimitMinutes} minutes with a total of ${newBreakMinutes} break minutes today.`,
           type: "BREAK"
         }
       });

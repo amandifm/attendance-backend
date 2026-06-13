@@ -406,6 +406,46 @@ router.patch(
   })
 );
 
+router.get(
+  "/me/face",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const viewer = (req as AuthenticatedRequest).user;
+    if (!viewer.faceReferenceDataUrl) throw new AppError(404, "No face registered.");
+    const matches = viewer.faceReferenceDataUrl.match(/^data:image\/(jpeg|jpg|png);base64,(.+)$/);
+    if (!matches) throw new AppError(500, "Invalid image format.");
+    const buffer = Buffer.from(matches[2], 'base64');
+    res.type(`image/${matches[1]}`).send(buffer);
+  })
+);
+
+  router.get(
+    "/:id/face",
+    requireAuth,
+    asyncHandler(async (req, res) => {
+      const targetId = req.params.id;
+      const hasPrivilege = ["ADMIN", "HR", "MANAGER", "SUPER_ADMIN"].includes((req as any).user.role);
+      if ((req as any).user.id !== targetId && !hasPrivilege) {
+        throw new AppError(403, "Not authorized to view this face.");
+      }
+
+      const targetUser = await prisma.user.findUnique({ where: { id: targetId } });
+      if (!targetUser || !targetUser.faceReferenceDataUrl) throw new AppError(404, "User not found or no face registered.");
+      
+      const matches = targetUser.faceReferenceDataUrl.match(/^data:image\/(jpeg|jpg|png|webp);base64,(.+)$/);
+      if (!matches) {
+        try {
+          const buffer = Buffer.from(targetUser.faceReferenceDataUrl.replace(/^data:image\/.*;base64,/, ''), 'base64');
+          return res.type('image/jpeg').send(buffer);
+        } catch(e) {
+          throw new AppError(500, "Invalid image format.");
+        }
+      }
+      const buffer = Buffer.from(matches[2], 'base64');
+      res.type(`image/${matches[1]}`).send(buffer);
+    })
+  );
+
 router.post(
   "/:id/force-logout",
   requireAuth,

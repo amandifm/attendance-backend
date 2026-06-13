@@ -92,7 +92,6 @@ model User {
   reports                    User[]                        @relation("ManagerReports")
   faceProfile                UserFaceProfile?
   webhookEndpoints           WebhookEndpoint[]
-  ShiftChangeLog             ShiftChangeLog[]
 }
 
 model RefreshToken {
@@ -159,7 +158,6 @@ model ShiftChangeLog {
   reason      String?
   createdAt   DateTime @default(now())
   shift       Shift    @relation(fields: [shiftId], references: [id])
-  changedBy   User     @relation(fields: [changedById], references: [id])
 }
 
 model AttendanceRecord {
