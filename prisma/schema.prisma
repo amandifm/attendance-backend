@@ -61,6 +61,7 @@ model User {
   attendancePolicyAcceptedAt DateTime?
   attendancePolicyVersion    String?
   forceLogoutAt              DateTime?
+  forceLogoutReason          String?
   departmentId               String?
   designationId              String?
   dailyBreakLimitMinutes     Int                           @default(10)

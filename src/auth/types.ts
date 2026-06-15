@@ -16,6 +16,7 @@ export type AuthUser = {
   attendancePolicyAcceptedAt: Date | null;
   attendancePolicyVersion: string | null;
   forceLogoutAt: Date | null;
+  forceLogoutReason: string | null;
   active: boolean;
   createdAt: Date;
   updatedAt: Date;

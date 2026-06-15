@@ -459,7 +459,7 @@ router.post(
     
     await prisma.user.update({
       where: { id: req.params.id },
-      data: { forceLogoutAt: new Date() }
+      data: { forceLogoutAt: new Date(), forceLogoutReason: reason }
     });
     
     await prisma.refreshToken.deleteMany({

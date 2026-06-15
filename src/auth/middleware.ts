@@ -37,7 +37,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     }
 
     if (user.forceLogoutAt && payload.iat && (payload.iat * 1000) < user.forceLogoutAt.getTime()) {
-      throw new AppError(401, "Session ended by administrator.");
+      throw new AppError(401, user.forceLogoutReason ? `Session ended by administrator: ${user.forceLogoutReason}` : "Session ended by administrator.");
     }
 
     (req as AuthenticatedRequest).user = user;
