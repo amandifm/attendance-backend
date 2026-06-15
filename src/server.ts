@@ -90,9 +90,14 @@ app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
   fail(res, 500, "Internal server error.");
 });
 
+import { initSocket } from "./socket.js";
+
 const server = app.listen(config.port, "0.0.0.0", async () => {
   try {
     await prisma.$connect();
+    
+    // Initialize Socket.io
+    initSocket(server);
 
     console.log(
       `DIFM Attendance Backend running on http://localhost:${config.port}`

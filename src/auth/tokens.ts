@@ -22,7 +22,7 @@ export function signAccessToken(user: Pick<AuthUser, "id" | "role" | "email">) {
 }
 
 export function signRefreshToken(userId: string) {
-  return jwt.sign({}, config.jwtRefreshSecret, {
+  return jwt.sign({ jti: crypto.randomUUID() }, config.jwtRefreshSecret, {
     subject: userId,
     expiresIn: `${config.refreshTokenDays}d`
   });

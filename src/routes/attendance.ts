@@ -857,10 +857,18 @@ router.post(
     if (existing.breaks[0]) {
       throw new AppError(400, "A break is already running.");
     }
+
+    const settings = await prisma.companySettings.upsert({
+      where: { id: "company" },
+      update: {},
+      create: {}
+    });
+    const effectiveBreakLimit = settings.defaultBreakDurationMinutes ?? user.dailyBreakLimitMinutes;
+
     console.log("Existing break minutes before starting new break:", existing.breakMinutes);
-    console.log("User's daily break limit : ", user.dailyBreakLimitMinutes)
-    if (existing.breakMinutes >= user.dailyBreakLimitMinutes) {
-      throw new AppError(400, `Daily break limit of ${user.dailyBreakLimitMinutes} minutes reached.`);
+    console.log("Effective daily break limit : ", effectiveBreakLimit)
+    if (existing.breakMinutes >= effectiveBreakLimit) {
+      throw new AppError(400, `Daily break limit of ${effectiveBreakLimit} minutes reached.`);
     }
     await ensureMonthOpen(existing.date);
     const startedAt = new Date();
@@ -940,13 +948,21 @@ router.post(
     const endedAt = new Date();
     const addedBreakMinutes = Math.max(0, Math.round((endedAt.getTime() - openBreak.startedAt.getTime()) / 60000));
     const newBreakMinutes = existing.breakMinutes + addedBreakMinutes;
-    const exceededBreakMinutes = newBreakMinutes > user.dailyBreakLimitMinutes;
+
+    const settings = await prisma.companySettings.upsert({
+      where: { id: "company" },
+      update: {},
+      create: {}
+    });
+    const effectiveBreakLimit = settings.defaultBreakDurationMinutes ?? user.dailyBreakLimitMinutes;
+
+    const exceededBreakMinutes = newBreakMinutes > effectiveBreakLimit;
     if (exceededBreakMinutes) {
       await prisma.appNotification.create({
         data: {
           userId: user.id,
           title: "Break Limit Exceeded",
-          body: `${user.name} has exceeded the Break Limit of ${user.dailyBreakLimitMinutes} minutes with a total of ${newBreakMinutes} break minutes today.`,
+          body: `${user.name} has exceeded the Break Limit of ${effectiveBreakLimit} minutes with a total of ${newBreakMinutes} break minutes today.`,
           type: "BREAK"
         }
       });

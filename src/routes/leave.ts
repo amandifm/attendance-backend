@@ -72,8 +72,7 @@ router.post(
       entityId: request.id,
       ipAddress: req.ip
     });
-
-    ok(res, serializeLeave(request), 201);
+      ok(res, serializeLeave(request), 201);
   })
 );
 
@@ -139,8 +138,7 @@ router.patch(
       employeeName: request.employeeName,
       status: request.status
     }).catch((error) => console.error("Webhook dispatch failed", error));
-
-    ok(res, serializeLeave(request));
+      ok(res, serializeLeave(request));
   })
 );
 

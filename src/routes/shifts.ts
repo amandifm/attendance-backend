@@ -125,8 +125,7 @@ router.post(
       entityId: shift.id,
       ipAddress: req.ip
     });
-
-    ok(res, serializeShift(shift), 201);
+      ok(res, serializeShift(shift), 201);
   })
 );
 
@@ -199,8 +198,7 @@ router.put(
       entityId: updated.id,
       ipAddress: req.ip
     });
-
-    ok(res, serializeShift(updated));
+      ok(res, serializeShift(updated));
   })
 );
 
@@ -273,8 +271,7 @@ router.patch(
       metadata: { status: input.status },
       ipAddress: req.ip
     });
-
-    ok(res, serializeShift(updated));
+      ok(res, serializeShift(updated));
   })
 );
 
