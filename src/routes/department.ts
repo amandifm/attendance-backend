@@ -10,7 +10,7 @@ import { AppError } from "../errors.js";
 
 const router = Router();
 
-router.get('/', requireAuth, requireRoles("ADMIN", "HR"), asyncHandler(async (req, res) => {
+router.get('/', requireAuth, asyncHandler(async (req, res) => {
     const departments =
         await prisma.department.findMany({
             orderBy: {
@@ -24,7 +24,6 @@ router.get('/', requireAuth, requireRoles("ADMIN", "HR"), asyncHandler(async (re
 router.get(
   "/:departmentId/designations",
   requireAuth,
-  requireRoles("HR", "ADMIN"),
   asyncHandler(async (req, res) => {
     const { departmentId } = req.params;
     const department =
@@ -56,4 +55,63 @@ router.get(
     ok(res, designations);
   })
 );
-export {router as departmentRouter};
+
+import { z } from "zod";
+
+const departmentSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  slug: z.string().min(1, "Slug is required"),
+  description: z.string().optional(),
+});
+
+router.post(
+  "/",
+  requireAuth,
+  requireRoles("ADMIN", "SUPER_ADMIN"),
+  asyncHandler(async (req, res) => {
+    const data = departmentSchema.parse(req.body);
+    const existing = await prisma.department.findUnique({ where: { slug: data.slug } });
+    if (existing) {
+      throw new AppError(400, "Department with this slug already exists.");
+    }
+    const dept = await prisma.department.create({ data });
+    ok(res, dept);
+  })
+);
+
+router.put(
+  "/:id",
+  requireAuth,
+  requireRoles("ADMIN", "SUPER_ADMIN"),
+  asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const data = departmentSchema.parse(req.body);
+    const existing = await prisma.department.findUnique({ where: { slug: data.slug } });
+    if (existing && existing.id !== id) {
+      throw new AppError(400, "Department with this slug already exists.");
+    }
+    const dept = await prisma.department.update({
+      where: { id },
+      data,
+    });
+    ok(res, dept);
+  })
+);
+
+router.delete(
+  "/:id",
+  requireAuth,
+  requireRoles("ADMIN", "SUPER_ADMIN"),
+  asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    // Check if there are users or designations assigned
+    const designations = await prisma.designation.count({ where: { departmentId: id } });
+    if (designations > 0) {
+      throw new AppError(400, "Cannot delete department with assigned designations.");
+    }
+    await prisma.department.delete({ where: { id } });
+    ok(res, { success: true });
+  })
+);
+
+export { router as departmentRouter };
